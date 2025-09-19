@@ -2,9 +2,9 @@
 
 ## Project Information
 - **Created By:** Justin Del Vecchio
-- **Version:** 0.1
+- **Version:** 0.2
 - **Date Created:** September 14, 2025
-- **Last Updated:** September 15, 2025
+- **Last Updated:** September 19, 2025
 
 ## Target Community of Interest
 Cybersecurity forensics investigators. This research would benefit professionals who need to analyze digital artifacts and trace their origins, including:
@@ -117,22 +117,135 @@ The literature review confirms this project's novelty: while binary-to-image cla
 This literature foundation demonstrates that while the individual components (binary visualization, PDF forensics, document provenance) have been studied, their integration for PDF creator identification through binary signatures represents a genuine contribution to the digital forensics field.
 
 ## Performance Parameters
-How will you measure success? What metrics will you collect? How will the metrics indicate how close you are to being done?
+
+### Current Results (September 2025)
+
+**BREAKTHROUGH ACHIEVED**: The binary-to-image PDF classification approach has demonstrated exceptional success with initial testing:
+
+#### 2-Class Classification (Word vs Google Docs)
+- **SVM Accuracy: 97.5%** 
+- **SGD Accuracy: 97.5%**
+- Training time: <1 second
+- Perfect precision (100%) for Google Docs detection
+- Only 1 misclassification out of 40 test samples
+
+#### 3-Class Classification (Word vs Google Docs vs Python/ReportLab)
+- **SVM Accuracy: 98.3%**
+- **SGD Accuracy: 100%** ⭐ **PERFECT CLASSIFICATION**
+- Training time: <1 second  
+- Zero classification errors with SGD classifier
+- Python-generated PDFs show distinct binary signatures (mean intensity: 73.17 vs ~121 for Word/Google)
+
+### Success Metrics
+- **Classification Accuracy**: Target ≥95% across all PDF generation methods
+- **Training Speed**: Models must train in <10 seconds for practical deployment
+- **Robustness**: Maintain >90% accuracy across varying document lengths and content types
+- **Scalability**: Performance retention when expanding to 4+ PDF generation sources
+- **Real-world Validation**: Successful classification of forensic samples from actual investigations
+
+### Research Completion Indicators
+1. **Phase 1 ✅ COMPLETE**: Proof of concept with 97.5-100% accuracy on controlled dataset
+2. **Phase 2**: Validation with larger datasets (1000+ samples per class)
+3. **Phase 3**: Addition of 4th+ PDF generation sources with maintained accuracy
+4. **Phase 4**: Testing on real-world forensic samples and varying document characteristics
 
 ## Research Approach & Tasks
 Identify high level tasks and sub tasks. Develop a realistic timeline. This timeline will be reviewed weekly. Timeline is flexible and may be adjusted. Plan out at least the first four weeks of research.
 
 ### Task Planning
+
+**CRITICAL**: With initial proof-of-concept achieving 97.5-100% accuracy, the focus now shifts to **VALIDATION AND EXPANSION** of these remarkable results. Students must develop comprehensive verification plans to ensure the robustness and generalizability of the binary-to-image PDF classification methodology.
+
 | Task | Description | Estimated Time to Complete |
 |------|-------------|---------------------------|
-| 1. Task 1 | This is where you come up with tasks. Feel free to make sub-tasks. But the key is this - you need to make a plan. | [Time estimate] |
-| ... | ... | ... |
-| Final Task | Develop Final Research Paper and Presentation | [Time estimate] |
+| **1. Scale-Up Validation** | Expand dataset to full corpus (398 samples per class) and verify performance retention | 1 Week |
+| **1.1** | Train classifiers on complete Word PDF dataset (398 samples) | 2 Days |
+| **1.2** | Train classifiers on complete Google Docs PDF dataset (398 samples) | 2 Days |
+| **1.3** | Train classifiers on complete Python PDF dataset (90+ samples) | 1 Day |
+| **1.4** | Compare full-scale results with initial 100-sample results | 2 Days |
+| **2. Fourth PDF Source Integration** | Add LibreOffice/OpenOffice as 4th PDF generation source | 2 Weeks |
+| **2.1** | Generate 200+ LibreOffice PDF samples using Wikipedia content | 1 Week |
+| **2.2** | Convert LibreOffice PDFs to binary images | 2 Days |
+| **2.3** | Train and evaluate 4-class classifier (Word/Google/Python/LibreOffice) | 3 Days |
+| **2.4** | Analyze classification performance degradation with additional class | 2 Days |
+| **3. Document Length Variation Testing** | Verify robustness across varying PDF document lengths | 1.5 Weeks |
+| **3.1** | Create short documents (1-2 pages) across all PDF generation methods | 3 Days |
+| **3.2** | Create long documents (10+ pages) across all PDF generation methods | 3 Days |
+| **3.3** | Train length-stratified classifiers and compare performance | 4 Days |
+| **3.4** | Analyze impact of document length on binary signature patterns | 1 Day |
+| **4. Content Type Robustness** | Test classifier performance across different document content types | 2 Weeks |
+| **4.1** | Generate mathematical/formula-heavy PDFs | 3 Days |
+| **4.2** | Generate image-heavy PDFs | 3 Days |
+| **4.3** | Generate table-heavy PDFs | 3 Days |
+| **4.4** | Generate plain text-only PDFs | 2 Days |
+| **4.5** | Evaluate classifier performance across content type variations | 3 Days |
+| **5. Advanced Classifier Development** | Explore CNN and deep learning approaches for improved accuracy | 2 Weeks |
+| **5.1** | Design CNN architecture for binary image classification | 3 Days |
+| **5.2** | Implement and train CNN models | 5 Days |
+| **5.3** | Compare CNN performance with baseline SVM/SGD results | 2 Days |
+| **5.4** | Optimize CNN hyperparameters for maximum accuracy | 4 Days |
+| **6. Real-World Validation** | Test classifiers on authentic forensic samples | 2 Weeks |
+| **6.1** | Collect real-world PDF samples from various sources | 1 Week |
+| **6.2** | Apply trained classifiers to real-world samples | 2 Days |
+| **6.3** | Validate results against known PDF generation sources | 3 Days |
+| **6.4** | Document edge cases and failure modes | 2 Days |
+| **7. Adversarial Testing** | Evaluate classifier robustness against evasion attempts | 1.5 Weeks |
+| **7.1** | Test performance on PDFs with stripped metadata | 2 Days |
+| **7.2** | Test performance on PDF-to-PDF conversions | 3 Days |
+| **7.3** | Test performance on compressed/optimized PDFs | 3 Days |
+| **7.4** | Document classifier limitations and attack vectors | 3 Days |
+| **8. Performance Optimization** | Optimize classifiers for deployment in forensic environments | 1 Week |
+| **8.1** | Implement feature selection for faster training | 2 Days |
+| **8.2** | Develop lightweight model versions for resource-constrained environments | 3 Days |
+| **8.3** | Create automated pipeline for PDF-to-classification workflow | 2 Days |
+| **Final Task** | Develop Final Research Paper and Presentation documenting validation results | 2 Weeks |
+
+### Weekly Milestones
+- **Week 1**: Complete scale-up validation and begin 4th source integration
+- **Week 2**: Finish LibreOffice integration and begin document length testing  
+- **Week 3**: Complete content type robustness testing
+- **Week 4**: Begin CNN development and real-world validation
+- **Week 5-6**: Complete advanced classifier development
+- **Week 7-8**: Finish real-world validation and adversarial testing
+- **Week 9-10**: Performance optimization and final documentation
+
+### Experimental Validation Recommendations
+
+#### Critical Research Questions to Address:
+1. **Scalability**: Do the 97.5-100% accuracy results hold with larger datasets?
+2. **Generalizability**: Can the approach distinguish between 4+ PDF generation sources?
+3. **Robustness**: How sensitive are binary signatures to document characteristics (length, content type, formatting)?
+4. **Real-world Applicability**: Do lab results translate to authentic forensic scenarios?
+5. **Adversarial Resistance**: Can the approach detect deliberate attempts to obscure PDF provenance?
+
+#### Recommended Experimental Controls:
+- **Consistent Content**: Use identical Wikipedia articles across all PDF generation methods
+- **Balanced Datasets**: Maintain equal sample sizes per class where possible
+- **Stratified Testing**: Separate validation by document length, content type, and generation method
+- **Blind Validation**: Test on PDFs where generation method is unknown to researchers
+- **Cross-validation**: Use k-fold validation to ensure results aren't dependent on specific train/test splits
+
+#### Success Criteria for Validation:
+- **Full-scale accuracy ≥90%** across all PDF generation methods
+- **4-class classification accuracy ≥85%** with addition of LibreOffice
+- **Length-invariant performance**: <5% accuracy drop across short vs long documents
+- **Content-type robustness**: <10% accuracy drop across different document types
+- **Real-world validation**: Successfully classify ≥80% of authentic forensic samples
 
 ### Key Deliverables
+- **Validation Results Report:** Due Mid-October (Week 4)
+- **Advanced Classifier Implementation:** Due End of October (Week 6) 
+- **Real-World Testing Results:** Due Mid-November (Week 8)
 - **Final research paper draft:** Due Last Week of November
 - **Final research paper:** Due First Week of December
 - **Final presentation of research:** Performed Second Week December
+
+### Research Impact Goals
+This validation phase will determine whether the binary-to-image PDF classification approach can:
+1. **Scale to forensic deployment** with maintained accuracy
+2. **Handle diverse real-world scenarios** beyond controlled lab conditions  
+3. **Resist adversarial attempts** to disguise PDF provenance
+4. **Provide reliable evidence** for cybersecurity investigations and legal proceedings
 
 ---
 *Template based on CYB 610: Cybersecurity Project requirements*
