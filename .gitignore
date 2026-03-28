@@ -1,14 +1,18 @@
-# augmented images (too large for git)
-data/augmented_images/
-
-# model files and results
+# ignore model files
 results/*.pth
 results/*.joblib
-results/*.csv
 
-# python cache
+# ignore raw test results
+results/cnn_test_results.csv
+results/xgboost_test_results.csv
+
+# keep these
+!results/confusion_matrices/
+!results/robustness_plots/
+!results/performance_metrics.csv
+
+# ignore augmented images and cache
+data/augmented_images/
 __pycache__/
 *.pyc
-
-# mac files
 .DS_Store
