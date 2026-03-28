@@ -1,0 +1,13 @@
+model,augmentation_type,accuracy,precision,recall,f1
+XGBoost,original,0.9989,0.9989,0.9989,0.9989
+CNN,original,0.9966,0.9967,0.9966,0.9966
+XGBoost,gaussian,0.9821,0.9825,0.9821,0.9816
+CNN,gaussian,0.9966,0.9967,0.9966,0.9966
+XGBoost,jpeg,0.9821,0.9822,0.9821,0.9818
+CNN,jpeg,0.9966,0.9967,0.9966,0.9966
+XGBoost,dpi,0.8613,0.7785,0.8613,0.8135
+CNN,dpi,0.3551,0.7027,0.3551,0.3516
+XGBoost,crop,0.481,0.519,0.481,0.4589
+CNN,crop,0.9933,0.9933,0.9933,0.9933
+XGBoost,bitdepth,0.9899,0.9908,0.9899,0.9901
+CNN,bitdepth,0.2629,0.7418,0.2629,0.2749
