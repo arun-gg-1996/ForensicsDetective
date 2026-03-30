@@ -29,7 +29,8 @@ print(f"Using device: {device}")
 
 # --- preprocessing functions ---
 
-def preprocess_for_xgboost(img):
+def preprocess_for_sklearn(img):
+    # same preprocessing for xgboost, svm, and sgd
     # convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # resize to 64x64
@@ -76,24 +77,29 @@ def load_augmented_images(aug_folder):
     return images, labels
 
 
-# --- evaluate a model on a set of images ---
+# --- evaluate sklearn model (works for xgboost, svm, sgd) ---
 
-def evaluate_xgboost(model, images, labels):
-    # preprocess all images for xgboost
-    X = np.array([preprocess_for_xgboost(img) for img in images])
+def evaluate_sklearn(model, images, labels):
+    # preprocess all images
+    X = np.array([preprocess_for_sklearn(img) for img in images])
     y = np.array(labels)
 
     # predict
     y_pred = model.predict(X)
 
-    # compute metrics
+    # compute overall metrics
     acc = accuracy_score(y, y_pred)
     prec = precision_score(y, y_pred, average='weighted', zero_division=0)
     rec = recall_score(y, y_pred, average='weighted', zero_division=0)
     f1 = f1_score(y, y_pred, average='weighted', zero_division=0)
 
-    return y, y_pred, acc, prec, rec, f1
+    # compute per-class metrics
+    report = classification_report(y, y_pred, output_dict=True, zero_division=0)
 
+    return y, y_pred, acc, prec, rec, f1, report
+
+
+# --- evaluate cnn model ---
 
 def evaluate_cnn(model, images, labels):
     # preprocess all images for cnn
@@ -114,13 +120,16 @@ def evaluate_cnn(model, images, labels):
     y = np.array(labels)
     y_pred = np.array(all_preds)
 
-    # compute metrics
+    # compute overall metrics
     acc = accuracy_score(y, y_pred)
     prec = precision_score(y, y_pred, average='weighted', zero_division=0)
     rec = recall_score(y, y_pred, average='weighted', zero_division=0)
     f1 = f1_score(y, y_pred, average='weighted', zero_division=0)
 
-    return y, y_pred, acc, prec, rec, f1
+    # compute per-class metrics
+    report = classification_report(y, y_pred, output_dict=True, zero_division=0)
+
+    return y, y_pred, acc, prec, rec, f1, report
 
 
 # --- save confusion matrix plot ---
@@ -140,121 +149,185 @@ def save_confusion_matrix(y_true, y_pred, title, save_path):
     plt.close()
 
 
+# --- helper to add results rows (overall + per-class) ---
+
+def collect_results(model_name, aug_type, acc, prec, rec, f1, report):
+    class_label_map = {"0": "Word", "1": "Google Docs", "2": "Python"}
+    rows = []
+
+    # overall row
+    rows.append({
+        "model": model_name,
+        "augmentation_type": aug_type,
+        "class_label": "overall",
+        "accuracy": round(acc, 4),
+        "precision": round(prec, 4),
+        "recall": round(rec, 4),
+        "f1": round(f1, 4),
+    })
+
+    # per-class rows
+    for key, name in class_label_map.items():
+        if key in report:
+            rows.append({
+                "model": model_name,
+                "augmentation_type": aug_type,
+                "class_label": name,
+                "accuracy": round(acc, 4),
+                "precision": round(report[key]["precision"], 4),
+                "recall": round(report[key]["recall"], 4),
+                "f1": round(report[key]["f1-score"], 4),
+            })
+
+    return rows
+
+
 # --- main script ---
 
 def main():
     print("=" * 60)
-    print("Robustness Analysis - XGBoost & CNN vs Augmented Images")
+    print("Robustness Analysis - All 4 Models vs Augmented Images")
     print("=" * 60)
 
     # create output directories
     os.makedirs("results/confusion_matrices", exist_ok=True)
     os.makedirs("results/robustness_plots", exist_ok=True)
 
-    # --- step 1: load both trained models ---
+    # --- step 1: load all 4 trained models ---
     print("\nStep 1: Loading trained models...")
 
     # load xgboost
     xgb_model = joblib.load("results/xgboost_model.joblib")
-    print("  Loaded XGBoost model from results/xgboost_model.joblib")
+    print("  Loaded XGBoost from results/xgboost_model.joblib")
+
+    # load svm
+    svm_model = joblib.load("results/svm_model.joblib")
+    print("  Loaded SVM from results/svm_model.joblib")
+
+    # load sgd
+    sgd_model = joblib.load("results/sgd_model.joblib")
+    print("  Loaded SGD from results/sgd_model.joblib")
 
     # load cnn
     cnn_model = SimpleCNN().to(device)
     cnn_model.load_state_dict(torch.load("results/cnn_model.pth", map_location=device))
     cnn_model.eval()
-    print("  Loaded CNN model from results/cnn_model.pth")
+    print("  Loaded CNN from results/cnn_model.pth")
 
-    # --- step 2: define augmentation types to test ---
+    # --- step 2: define what to test ---
     augmentation_types = ["original", "gaussian", "jpeg", "dpi", "crop", "bitdepth"]
     base_path = "data/augmented_images"
 
-    # store all results here
+    # sklearn models use the same preprocessing
+    sklearn_models = [
+        ("XGBoost", xgb_model),
+        ("SVM", svm_model),
+        ("SGD", sgd_model),
+    ]
+
+    # store all results
     all_results = []
 
-    # --- step 3: evaluate both models on each augmentation ---
-    print("\nStep 3: Evaluating models on each augmentation type...\n")
+    # track accuracies for robustness curve
+    accuracies = {
+        "XGBoost": [],
+        "SVM": [],
+        "SGD": [],
+        "CNN": [],
+    }
 
-    xgb_accuracies = []
-    cnn_accuracies = []
+    # --- step 3: evaluate all models on each augmentation ---
+    print("\nStep 3: Evaluating all models on each augmentation type...\n")
 
     for aug_type in augmentation_types:
         aug_folder = os.path.join(base_path, aug_type)
-        print(f"--- Testing on: {aug_type} ---")
+        print(f"{'='*50}")
+        print(f"Testing on: {aug_type}")
+        print(f"{'='*50}")
 
         # load images for this augmentation
         images, labels = load_augmented_images(aug_folder)
         print(f"  Loaded {len(images)} images")
 
-        # evaluate xgboost
-        print(f"  Evaluating XGBoost...")
-        y_true_xgb, y_pred_xgb, xgb_acc, xgb_prec, xgb_rec, xgb_f1 = \
-            evaluate_xgboost(xgb_model, images, labels)
+        # evaluate each sklearn model (xgboost, svm, sgd)
+        for model_name, model in sklearn_models:
+            print(f"\n  Evaluating {model_name}...")
+            y_true, y_pred, acc, prec, rec, f1, report = \
+                evaluate_sklearn(model, images, labels)
 
-        print(f"    Accuracy: {xgb_acc:.4f}  Precision: {xgb_prec:.4f}  "
-              f"Recall: {xgb_rec:.4f}  F1: {xgb_f1:.4f}")
+            print(f"    Accuracy: {acc:.4f}  Precision: {prec:.4f}  "
+                  f"Recall: {rec:.4f}  F1: {f1:.4f}")
 
-        xgb_accuracies.append(xgb_acc)
+            # per-class summary
+            for cls_key, cls_name in [("0", "Word"), ("1", "Google Docs"), ("2", "Python")]:
+                if cls_key in report:
+                    r = report[cls_key]
+                    print(f"    {cls_name:15s} P:{r['precision']:.4f}  "
+                          f"R:{r['recall']:.4f}  F1:{r['f1-score']:.4f}")
 
-        # save xgboost confusion matrix
-        cm_path = f"results/confusion_matrices/xgboost_{aug_type}.png"
-        save_confusion_matrix(y_true_xgb, y_pred_xgb,
-                              f"XGBoost - {aug_type}", cm_path)
+            accuracies[model_name].append(acc)
 
-        # store results
-        all_results.append({
-            "model": "XGBoost",
-            "augmentation_type": aug_type,
-            "accuracy": round(xgb_acc, 4),
-            "precision": round(xgb_prec, 4),
-            "recall": round(xgb_rec, 4),
-            "f1": round(xgb_f1, 4),
-        })
+            # save confusion matrix
+            cm_path = f"results/confusion_matrices/{model_name.lower()}_{aug_type}.png"
+            save_confusion_matrix(y_true, y_pred,
+                                  f"{model_name} - {aug_type}", cm_path)
+
+            # collect results (overall + per-class)
+            all_results.extend(collect_results(model_name, aug_type, acc, prec, rec, f1, report))
 
         # evaluate cnn
-        print(f"  Evaluating CNN...")
-        y_true_cnn, y_pred_cnn, cnn_acc, cnn_prec, cnn_rec, cnn_f1 = \
+        print(f"\n  Evaluating CNN...")
+        y_true, y_pred, acc, prec, rec, f1, report = \
             evaluate_cnn(cnn_model, images, labels)
 
-        print(f"    Accuracy: {cnn_acc:.4f}  Precision: {cnn_prec:.4f}  "
-              f"Recall: {cnn_rec:.4f}  F1: {cnn_f1:.4f}")
+        print(f"    Accuracy: {acc:.4f}  Precision: {prec:.4f}  "
+              f"Recall: {rec:.4f}  F1: {f1:.4f}")
 
-        cnn_accuracies.append(cnn_acc)
+        for cls_key, cls_name in [("0", "Word"), ("1", "Google Docs"), ("2", "Python")]:
+            if cls_key in report:
+                r = report[cls_key]
+                print(f"    {cls_name:15s} P:{r['precision']:.4f}  "
+                      f"R:{r['recall']:.4f}  F1:{r['f1-score']:.4f}")
+
+        accuracies["CNN"].append(acc)
 
         # save cnn confusion matrix
         cm_path = f"results/confusion_matrices/cnn_{aug_type}.png"
-        save_confusion_matrix(y_true_cnn, y_pred_cnn,
+        save_confusion_matrix(y_true, y_pred,
                               f"CNN - {aug_type}", cm_path)
 
-        # store results
-        all_results.append({
-            "model": "CNN",
-            "augmentation_type": aug_type,
-            "accuracy": round(cnn_acc, 4),
-            "precision": round(cnn_prec, 4),
-            "recall": round(cnn_rec, 4),
-            "f1": round(cnn_f1, 4),
-        })
+        # collect cnn results
+        all_results.extend(collect_results("CNN", aug_type, acc, prec, rec, f1, report))
 
         print()
 
     # --- step 4: save all metrics to csv ---
-    print("Step 4: Saving performance metrics to CSV...")
+    print("\nStep 4: Saving performance metrics to CSV...")
 
     results_df = pd.DataFrame(all_results)
     results_df.to_csv("results/performance_metrics.csv", index=False)
     print("  Saved to results/performance_metrics.csv")
-    print()
-    print(results_df.to_string(index=False))
+    print(f"  Total rows: {len(results_df)} ({len(results_df[results_df['class_label']=='overall'])} overall + per-class)")
+
+    # print overall results table
+    print("\nOverall accuracy summary:")
+    overall_df = results_df[results_df["class_label"] == "overall"]
+    pivot = overall_df.pivot(index="augmentation_type", columns="model", values="accuracy")
+    pivot = pivot.reindex(augmentation_types)
+    pivot = pivot[["XGBoost", "SVM", "SGD", "CNN"]]
+    print(pivot.to_string())
 
     # --- step 5: generate robustness curve plot ---
     print("\n\nStep 5: Generating robustness curve plot...")
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(augmentation_types, xgb_accuracies, 'o-', label='XGBoost', linewidth=2, markersize=8)
-    plt.plot(augmentation_types, cnn_accuracies, 's-', label='CNN', linewidth=2, markersize=8)
+    plt.figure(figsize=(12, 7))
+    plt.plot(augmentation_types, accuracies["XGBoost"], 'o-', label='XGBoost', linewidth=2, markersize=8)
+    plt.plot(augmentation_types, accuracies["SVM"], 's-', label='SVM', linewidth=2, markersize=8)
+    plt.plot(augmentation_types, accuracies["SGD"], '^-', label='SGD', linewidth=2, markersize=8)
+    plt.plot(augmentation_types, accuracies["CNN"], 'D-', label='CNN', linewidth=2, markersize=8)
     plt.xlabel("Augmentation Type")
     plt.ylabel("Accuracy")
-    plt.title("Robustness Curve: Accuracy vs Augmentation Type")
+    plt.title("Robustness Curve: Accuracy vs Augmentation Type (All 4 Models)")
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.ylim(0, 1.05)
@@ -268,28 +341,46 @@ def main():
     print("SUMMARY")
     print("=" * 60)
 
-    # find biggest accuracy drop for xgboost
-    xgb_baseline = xgb_accuracies[0]
-    xgb_drops = [(aug, xgb_baseline - acc) for aug, acc in
-                 zip(augmentation_types[1:], xgb_accuracies[1:])]
-    xgb_worst = max(xgb_drops, key=lambda x: x[1])
+    model_names = ["XGBoost", "SVM", "SGD", "CNN"]
 
-    print(f"\nXGBoost baseline accuracy (original): {xgb_baseline:.4f}")
-    print(f"  Biggest drop: {xgb_worst[0]} (accuracy dropped by {xgb_worst[1]:.4f})")
+    # find biggest accuracy drop for each model
+    for name in model_names:
+        baseline = accuracies[name][0]
+        drops = [(aug, baseline - acc) for aug, acc in
+                 zip(augmentation_types[1:], accuracies[name][1:])]
+        worst = max(drops, key=lambda x: x[1])
+        print(f"\n{name}:")
+        print(f"  Baseline accuracy (original): {baseline:.4f}")
+        print(f"  Biggest drop: {worst[0]} (dropped by {worst[1]:.4f} to {baseline - worst[1]:.4f})")
 
-    # find biggest accuracy drop for cnn
-    cnn_baseline = cnn_accuracies[0]
-    cnn_drops = [(aug, cnn_baseline - acc) for aug, acc in
-                 zip(augmentation_types[1:], cnn_accuracies[1:])]
-    cnn_worst = max(cnn_drops, key=lambda x: x[1])
+    # find best performing model (highest average accuracy across all augmentations)
+    avg_accs = {name: np.mean(accuracies[name]) for name in model_names}
+    best_model = max(avg_accs, key=avg_accs.get)
 
-    print(f"\nCNN baseline accuracy (original): {cnn_baseline:.4f}")
-    print(f"  Biggest drop: {cnn_worst[0]} (accuracy dropped by {cnn_worst[1]:.4f})")
+    print(f"\nAverage accuracy across all augmentations:")
+    for name in model_names:
+        print(f"  {name:10s}: {avg_accs[name]:.4f}")
 
-    # overall comparison
-    print(f"\nAccuracy comparison across all augmentations:")
+    print(f"\nBest overall model: {best_model} (avg accuracy: {avg_accs[best_model]:.4f})")
+
+    # find most robust model (smallest drop from baseline to worst case)
+    min_accs = {name: min(accuracies[name]) for name in model_names}
+    drops_from_baseline = {name: accuracies[name][0] - min_accs[name] for name in model_names}
+    most_robust = min(drops_from_baseline, key=drops_from_baseline.get)
+
+    print(f"Most robust model: {most_robust} (smallest max drop: {drops_from_baseline[most_robust]:.4f})")
+
+    # full comparison table
+    print(f"\nFull accuracy comparison:")
+    print(f"  {'Augmentation':15s}", end="")
+    for name in model_names:
+        print(f"  {name:>8s}", end="")
+    print()
     for i, aug in enumerate(augmentation_types):
-        print(f"  {aug:12s}  XGBoost: {xgb_accuracies[i]:.4f}  CNN: {cnn_accuracies[i]:.4f}")
+        print(f"  {aug:15s}", end="")
+        for name in model_names:
+            print(f"  {accuracies[name][i]:8.4f}", end="")
+        print()
 
     print("\nAll done!")
 

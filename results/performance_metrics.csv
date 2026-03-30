@@ -1,13 +1,97 @@
-model,augmentation_type,accuracy,precision,recall,f1
-XGBoost,original,0.9989,0.9989,0.9989,0.9989
-CNN,original,0.9966,0.9967,0.9966,0.9966
-XGBoost,gaussian,0.9821,0.9825,0.9821,0.9816
-CNN,gaussian,0.9966,0.9967,0.9966,0.9966
-XGBoost,jpeg,0.9821,0.9822,0.9821,0.9818
-CNN,jpeg,0.9966,0.9967,0.9966,0.9966
-XGBoost,dpi,0.8613,0.7785,0.8613,0.8135
-CNN,dpi,0.3551,0.7027,0.3551,0.3516
-XGBoost,crop,0.481,0.519,0.481,0.4589
-CNN,crop,0.9933,0.9933,0.9933,0.9933
-XGBoost,bitdepth,0.9899,0.9908,0.9899,0.9901
-CNN,bitdepth,0.2629,0.7418,0.2629,0.2749
+model,augmentation_type,class_label,accuracy,precision,recall,f1
+XGBoost,original,overall,0.9989,0.9989,0.9989,0.9989
+XGBoost,original,Word,0.9989,1.0,1.0,1.0
+XGBoost,original,Google Docs,0.9989,1.0,0.9975,0.9987
+XGBoost,original,Python,0.9989,0.9901,1.0,0.995
+SVM,original,overall,0.9955,0.9955,0.9955,0.9955
+SVM,original,Word,0.9955,0.9925,0.9975,0.995
+SVM,original,Google Docs,0.9955,0.9975,0.9924,0.9949
+SVM,original,Python,0.9955,1.0,1.0,1.0
+SGD,original,overall,0.9911,0.9912,0.9911,0.9911
+SGD,original,Word,0.9911,0.9803,1.0,0.99
+SGD,original,Google Docs,0.9911,1.0,0.9798,0.9898
+SGD,original,Python,0.9911,1.0,1.0,1.0
+CNN,original,overall,0.9966,0.9967,0.9966,0.9966
+CNN,original,Word,0.9966,1.0,0.9925,0.9962
+CNN,original,Google Docs,0.9966,0.9925,1.0,0.9962
+CNN,original,Python,0.9966,1.0,1.0,1.0
+XGBoost,gaussian,overall,0.9821,0.9825,0.9821,0.9816
+XGBoost,gaussian,Word,0.9821,1.0,1.0,1.0
+XGBoost,gaussian,Google Docs,0.9821,0.9634,0.9975,0.9801
+XGBoost,gaussian,Python,0.9821,0.9884,0.85,0.914
+SVM,gaussian,overall,0.9955,0.9955,0.9955,0.9955
+SVM,gaussian,Word,0.9955,0.9925,0.9975,0.995
+SVM,gaussian,Google Docs,0.9955,0.9975,0.9924,0.9949
+SVM,gaussian,Python,0.9955,1.0,1.0,1.0
+SGD,gaussian,overall,0.9899,0.9902,0.9899,0.9899
+SGD,gaussian,Word,0.9899,0.9779,1.0,0.9888
+SGD,gaussian,Google Docs,0.9899,1.0,0.9773,0.9885
+SGD,gaussian,Python,0.9899,1.0,1.0,1.0
+CNN,gaussian,overall,0.9966,0.9967,0.9966,0.9966
+CNN,gaussian,Word,0.9966,1.0,0.9925,0.9962
+CNN,gaussian,Google Docs,0.9966,0.9925,1.0,0.9962
+CNN,gaussian,Python,0.9966,1.0,1.0,1.0
+XGBoost,jpeg,overall,0.9821,0.9822,0.9821,0.9818
+XGBoost,jpeg,Word,0.9821,0.9975,0.995,0.9962
+XGBoost,jpeg,Google Docs,0.9821,0.9681,0.9949,0.9813
+XGBoost,jpeg,Python,0.9821,0.9778,0.88,0.9263
+SVM,jpeg,overall,0.9955,0.9955,0.9955,0.9955
+SVM,jpeg,Word,0.9955,0.9925,0.9975,0.995
+SVM,jpeg,Google Docs,0.9955,0.9975,0.9924,0.9949
+SVM,jpeg,Python,0.9955,1.0,1.0,1.0
+SGD,jpeg,overall,0.9922,0.9923,0.9922,0.9922
+SGD,jpeg,Word,0.9922,0.9827,1.0,0.9913
+SGD,jpeg,Google Docs,0.9922,1.0,0.9823,0.9911
+SGD,jpeg,Python,0.9922,1.0,1.0,1.0
+CNN,jpeg,overall,0.9966,0.9967,0.9966,0.9966
+CNN,jpeg,Word,0.9966,1.0,0.9925,0.9962
+CNN,jpeg,Google Docs,0.9966,0.9925,1.0,0.9962
+CNN,jpeg,Python,0.9966,1.0,1.0,1.0
+XGBoost,dpi,overall,0.8613,0.7785,0.8613,0.8135
+XGBoost,dpi,Word,0.8613,0.9817,0.946,0.9635
+XGBoost,dpi,Google Docs,0.8613,0.7708,0.9937,0.8682
+XGBoost,dpi,Python,0.8613,0.0,0.0,0.0
+SVM,dpi,overall,0.9664,0.9667,0.9664,0.9664
+SVM,dpi,Word,0.9664,0.9521,0.9736,0.9627
+SVM,dpi,Google Docs,0.9664,0.9729,0.9508,0.9617
+SVM,dpi,Python,0.9664,1.0,1.0,1.0
+SGD,dpi,overall,0.9318,0.9386,0.9318,0.9313
+SGD,dpi,Word,0.9318,0.8758,0.9925,0.9305
+SGD,dpi,Google Docs,0.9318,0.9912,0.8535,0.9172
+SGD,dpi,Python,0.9318,0.9804,1.0,0.9901
+CNN,dpi,overall,0.3551,0.7027,0.3551,0.3516
+CNN,dpi,Word,0.3551,0.5368,0.4033,0.4605
+CNN,dpi,Google Docs,0.3551,1.0,0.1439,0.2517
+CNN,dpi,Python,0.3551,0.1859,1.0,0.3135
+XGBoost,crop,overall,0.481,0.519,0.481,0.4589
+XGBoost,crop,Word,0.481,0.4808,0.2513,0.33
+XGBoost,crop,Google Docs,0.481,0.4469,0.7222,0.5521
+XGBoost,crop,Python,0.481,0.9565,0.44,0.6027
+SVM,crop,overall,0.7315,0.7736,0.7315,0.7182
+SVM,crop,Word,0.7315,0.8527,0.4799,0.6141
+SVM,crop,Google Docs,0.7315,0.6368,0.9167,0.7516
+SVM,crop,Python,0.7315,1.0,1.0,1.0
+SGD,crop,overall,0.8188,0.819,0.8188,0.8177
+SGD,crop,Word,0.8188,0.801,0.8191,0.8099
+SGD,crop,Google Docs,0.8188,0.832,0.7753,0.8026
+SGD,crop,Python,0.8188,0.839,0.99,0.9083
+CNN,crop,overall,0.9933,0.9933,0.9933,0.9933
+CNN,crop,Word,0.9933,0.9975,0.9874,0.9924
+CNN,crop,Google Docs,0.9933,0.9875,0.9975,0.9925
+CNN,crop,Python,0.9933,1.0,1.0,1.0
+XGBoost,bitdepth,overall,0.9899,0.9908,0.9899,0.9901
+XGBoost,bitdepth,Word,0.9899,1.0,0.9975,0.9987
+XGBoost,bitdepth,Google Docs,0.9899,1.0,0.9798,0.9898
+XGBoost,bitdepth,Python,0.9899,0.9174,1.0,0.9569
+SVM,bitdepth,overall,0.9966,0.9967,0.9966,0.9966
+SVM,bitdepth,Word,0.9966,0.9925,1.0,0.9962
+SVM,bitdepth,Google Docs,0.9966,1.0,0.9924,0.9962
+SVM,bitdepth,Python,0.9966,1.0,1.0,1.0
+SGD,bitdepth,overall,0.9911,0.9912,0.9911,0.9911
+SGD,bitdepth,Word,0.9911,0.9803,1.0,0.99
+SGD,bitdepth,Google Docs,0.9911,1.0,0.9798,0.9898
+SGD,bitdepth,Python,0.9911,1.0,1.0,1.0
+CNN,bitdepth,overall,0.2629,0.7418,0.2629,0.2749
+CNN,bitdepth,Word,0.2629,0.6364,0.1759,0.2756
+CNN,bitdepth,Google Docs,0.2629,1.0,0.1641,0.282
+CNN,bitdepth,Python,0.2629,0.1391,1.0,0.2442
