@@ -12,7 +12,7 @@ import seaborn as sns
 from sklearn.metrics import (accuracy_score, precision_score, recall_score,
                              f1_score, classification_report, confusion_matrix)
 
-# add src folder to path so we can import the CNN class
+# add src folder to path so I can import the CNN class
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 from cnn_classifier import SimpleCNN
 

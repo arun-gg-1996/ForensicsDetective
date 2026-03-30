@@ -3,7 +3,7 @@
 ## What This Project Does
 
 PDFs made by different apps (Word, Google Docs, Python) have different binary signatures.
-We convert PDF binary data into grayscale PNG images and use machine learning to figure out
+I convert PDF binary data into grayscale PNG images and use machine learning to figure out
 which app made each PDF.
 
 **3 Classes:**
@@ -13,7 +13,7 @@ which app made each PDF.
 
 **Dataset:**
 - 894 original images total across 3 classes
-- We apply 5 types of augmentations to each image (DPI makes 2 variants)
+- I apply 5 types of augmentations to each image (DPI makes 2 variants)
 - That gives us 894 originals + 5364 augmented = 6258 total images
 
 **Four Classifiers:**
@@ -22,7 +22,7 @@ which app made each PDF.
 - SGD — same 64x64 flattened features, modified huber loss
 - CNN (PyTorch) — 128x128 grayscale images, 3 conv blocks
 
-We train all four on original images only. The augmented images are just used to
+I train all four on original images only. The augmented images are just used to
 test how well the classifiers hold up against distorted inputs.
 
 ---
@@ -55,34 +55,24 @@ python src/augmentation.py
 This takes the 894 original images and creates 6 augmented versions of each one.
 Everything gets saved to `data/augmented_images/`.
 
-### Step 2 — Train XGBoost
+### Step 2 — Train all 4 classifiers
 
 ```bash
-python src/xgboost_classifier.py
+python src/classification.py
 ```
 
-Trains XGBoost on original images (80% train, 20% test).
-Saves the model, confusion matrix, and predictions to `results/`.
+This trains XGBoost, SVM, SGD, and CNN one after the other on the original images
+(80% train, 20% test, same split for all models). Saves all models and confusion
+matrices to `results/`. Prints a summary table at the end.
 
-### Step 3 — Train SVM and SGD
-
+You can also train classifiers individually if you prefer:
 ```bash
-python src/svm_sgd_classifier.py
+python src/xgboost_classifier.py   # just XGBoost
+python src/svm_sgd_classifier.py   # just SVM and SGD
+python src/cnn_classifier.py       # just CNN
 ```
 
-Trains both SVM and SGD on original images (same 80/20 split).
-Saves both models and confusion matrices to `results/`.
-
-### Step 4 — Train CNN
-
-```bash
-python src/cnn_classifier.py
-```
-
-Trains the CNN for 15 epochs on original images using MPS/CUDA/CPU.
-Saves the model, confusion matrix, and predictions to `results/`.
-
-### Step 5 — Run robustness analysis
+### Step 3 — Run robustness analysis
 
 ```bash
 python src/analysis.py
@@ -91,6 +81,17 @@ python src/analysis.py
 Tests all 4 trained models against all augmentation types.
 Saves metrics CSV (with per-class and overall scores), confusion matrices,
 and a robustness curve plot.
+
+### Step 4 — Run statistical significance tests
+
+```bash
+python src/statistical_tests.py
+```
+
+Runs McNemar's test on all 6 classifier pairs (XGBoost vs SVM, XGBoost vs SGD, etc.)
+to check if the accuracy differences are statistically significant.
+Tests on both original and augmented data.
+Saves results to `results/mcnemar_results.csv`.
 
 ---
 
@@ -116,12 +117,13 @@ and a robustness curve plot.
 | Random Crop    | 48.10%  | 73.15% | 81.88% | 99.33% |
 | Bit Depth      | 98.99%  | 99.66% | 99.11% | 26.29% |
 
-### What we found
-- SGD is the most robust model overall (smallest accuracy drop across augmentations)
+### What I found
+- SVM is the most robust model overall (highest average accuracy across augmentations)
 - XGBoost and SVM both struggle with cropping since they use flattened pixels
 - CNN struggles with bit depth and DPI changes since it loses texture detail
 - CNN handles noise, JPEG, and cropping well since convolutions are good with spatial stuff
 - All sklearn models (XGBoost, SVM, SGD) handle noise, JPEG, and bit depth well
+- McNemar's test tells us which differences between classifiers are statistically significant
 
 ---
 
@@ -129,20 +131,24 @@ and a robustness curve plot.
 
 ```
 ForensicsDetective/
-├── SETUP.md
+├── README.md                  # project overview and how to run
+├── SETUP.md                   # this file
 ├── requirements.txt
 ├── .gitignore
 │
-├── word_pdfs_png/              # 398 Word PDF images
-├── google_docs_pdfs_png/       # 396 Google Docs PDF images
-├── python_pdfs_png/            # 100 Python PDF images
+├── word_pdfs_png/             # 398 Word PDF images
+├── google_docs_pdfs_png/      # 396 Google Docs PDF images
+├── python_pdfs_png/           # 100 Python PDF images
 │
 ├── src/
-│   ├── augmentation.py         # creates augmented images
-│   ├── xgboost_classifier.py   # trains XGBoost
-│   ├── svm_sgd_classifier.py   # trains SVM and SGD
-│   ├── cnn_classifier.py       # trains CNN
-│   └── analysis.py             # robustness testing (all 4 models)
+│   ├── utils.py               # shared utility functions (load images, metrics, etc.)
+│   ├── classification.py      # trains all 4 classifiers in one script
+│   ├── augmentation.py        # creates augmented images
+│   ├── xgboost_classifier.py  # trains XGBoost (standalone)
+│   ├── svm_sgd_classifier.py  # trains SVM and SGD (standalone)
+│   ├── cnn_classifier.py      # trains CNN (standalone)
+│   ├── analysis.py            # robustness testing (all 4 models vs augmentations)
+│   └── statistical_tests.py   # McNemar's significance tests (all 6 pairs)
 │
 ├── data/
 │   └── augmented_images/
@@ -161,9 +167,23 @@ ForensicsDetective/
 │   ├── xgboost_test_results.csv
 │   ├── cnn_test_results.csv
 │   ├── performance_metrics.csv
-│   ├── confusion_matrices/     # 28 confusion matrix plots
-│   └── robustness_plots/       # robustness curve (all 4 models)
+│   ├── mcnemar_results.csv
+│   ├── confusion_matrices/    # confusion matrix plots
+│   └── robustness_plots/      # robustness curve (all 4 models)
 │
 └── reports/
     └── final_research_report.pdf
 ```
+
+### What each src/ file does
+
+| File | Purpose |
+|------|---------|
+| `utils.py` | Shared functions: image loading, preprocessing, device selection, confusion matrix saving, metrics printing. Other scripts import from here. |
+| `classification.py` | Trains all 4 classifiers (XGBoost, SVM, SGD, CNN) in sequence on original images. Uses the same train/test split for all models. Saves all models and confusion matrices. |
+| `augmentation.py` | Takes the 894 original PNGs and applies 5 augmentation types (gaussian noise, JPEG compression, DPI downsampling, random crop, bit depth reduction). Saves everything to `data/augmented_images/`. |
+| `xgboost_classifier.py` | Standalone XGBoost training script. |
+| `svm_sgd_classifier.py` | Standalone SVM + SGD training script. |
+| `cnn_classifier.py` | Standalone CNN training script. Defines the `SimpleCNN` class that other scripts import. |
+| `analysis.py` | Loads all 4 trained models and tests them on each augmentation type. Saves a CSV with all metrics and a robustness curve plot. |
+| `statistical_tests.py` | Runs McNemar's test on all 6 classifier pairs to check if accuracy differences are statistically significant. Tests on both original and augmented data. Saves results to CSV. |
